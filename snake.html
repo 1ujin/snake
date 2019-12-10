@@ -1,0 +1,189 @@
+<canvas id="canvas" style="margin: -8px"></canvas>
+<script type="text/javascript">
+    const BLOCK = 20;
+    const MARGIN = 1;
+    const FREQUENCY = 10;
+    let interval;
+    let status = {
+        pause: false
+    };
+    let snake = [];
+    let apple = {};
+    let direction = {x: 1, y: 0};
+
+    window.onload = function() {
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+        ctx.canvas.width = window.innerWidth;
+        ctx.canvas.height = window.innerHeight;
+        snake = [
+            {
+                x: Math.floor(canvas.width / BLOCK / 2 - 1) * BLOCK,
+                y: Math.floor(canvas.height / BLOCK / 2) * BLOCK
+            },
+            {
+                x: Math.floor(canvas.width / BLOCK / 2) * BLOCK,
+                y: Math.floor(canvas.height / BLOCK / 2) * BLOCK
+            }
+        ];
+        apple = getRandomPosition();
+        document.addEventListener("keydown", keyDown);
+        interval = setInterval(game, 1000 / FREQUENCY);
+    }
+
+    function game() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "lime";
+
+        // draw snake body
+        for (var i = snake.length - 2; i >= 1; i--) {
+            ctx.fillRect(snake[i].x + MARGIN, snake[i].y + MARGIN, BLOCK - MARGIN * 2, BLOCK - MARGIN * 2);
+        }
+        
+        // draw snake tail
+        ctx.beginPath();
+        ctx.moveTo((snake[0].x * (BLOCK * 3 / 2 - MARGIN) - snake[1].x * (BLOCK / 2 - MARGIN)) / BLOCK + BLOCK / 2, (snake[0].y * (BLOCK * 3 / 2 - MARGIN) - snake[1].y * (BLOCK / 2 - MARGIN)) / BLOCK + BLOCK / 2);
+        ctx.lineTo((snake[0].x * (BLOCK / 2 + MARGIN) + snake[1].x * (BLOCK / 2 - MARGIN)) / BLOCK + BLOCK / 2 + (snake[0].y - snake[1].y) * (BLOCK / 2 - MARGIN) / BLOCK, (snake[0].y * (BLOCK / 2 + MARGIN) + snake[1].y * (BLOCK / 2 - MARGIN)) / BLOCK + BLOCK / 2 + (snake[0].x - snake[1].x) * (BLOCK / 2 - MARGIN) / BLOCK);
+        ctx.lineTo((snake[0].x * (BLOCK / 2 + MARGIN) + snake[1].x * (BLOCK / 2 - MARGIN)) / BLOCK + BLOCK / 2 - (snake[0].y - snake[1].y) * (BLOCK / 2 - MARGIN) / BLOCK, (snake[0].y * (BLOCK / 2 + MARGIN) + snake[1].y * (BLOCK / 2 - MARGIN)) / BLOCK + BLOCK / 2 - (snake[0].x - snake[1].x) * (BLOCK / 2 - MARGIN) / BLOCK);
+        ctx.fill();
+
+        // draw snake head
+        if (direction.x == 1) {
+            ctx.fillRect(snake[snake.length - 1].x + MARGIN, snake[snake.length - 1].y + MARGIN, BLOCK / 2 - MARGIN, BLOCK - MARGIN * 2);
+            ctx.beginPath()
+            ctx.arc(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + BLOCK / 2, BLOCK / 2 - MARGIN, Math.PI / 2, Math.PI * 3 / 2, true);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        if (direction.x == -1) {
+            ctx.fillRect(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + MARGIN, BLOCK / 2 - MARGIN, BLOCK - MARGIN * 2);
+            ctx.beginPath()
+            ctx.arc(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + BLOCK / 2, BLOCK / 2 - MARGIN, Math.PI / 2, Math.PI * 3 / 2, false);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        if (direction.y == 1) {
+            ctx.fillRect(snake[snake.length - 1].x + MARGIN, snake[snake.length - 1].y + MARGIN, BLOCK - MARGIN * 2, BLOCK / 2 - MARGIN);
+            ctx.beginPath()
+            ctx.arc(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + BLOCK / 2, BLOCK / 2 - MARGIN, Math.PI, 0, true);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        if (direction.y == -1) {
+            ctx.fillRect(snake[snake.length - 1].x + MARGIN, snake[snake.length - 1].y + BLOCK / 2, BLOCK - MARGIN * 2, BLOCK / 2 - MARGIN);
+            ctx.beginPath()
+            ctx.arc(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + BLOCK / 2, BLOCK / 2 - MARGIN, Math.PI, 0, false);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // draw eyes
+        if (direction.y == 0) {
+            ctx.fillStyle = "white";
+            ctx.beginPath()
+            ctx.arc(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + BLOCK / 4, BLOCK / 4 - MARGIN / 2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = "black";
+            ctx.beginPath()
+            ctx.arc(snake[snake.length - 1].x + BLOCK / 2, snake[snake.length - 1].y + BLOCK / 4, BLOCK / 8 - MARGIN / 4, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // if (direction.x == 0) {
+        //     ctx.fillStyle = "white";
+        //     ctx.ellipse(snake[snake.length - 1].x + BLOCK / 8 + MARGIN, snake[snake.length - 1].y + BLOCK / 2, BLOCK / 8, BLOCK / 4, 0, 0, Math.PI * 2);
+        //     ctx.fill();
+        // }
+
+        // draw apple
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(apple.x + BLOCK / 2, apple.y + BLOCK / 2, BLOCK / 2 - MARGIN, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+
+        let head = {
+            x: snake[snake.length - 1].x,
+            y: snake[snake.length - 1].y
+        };
+
+        head.x += direction.x * BLOCK;
+        head.y += direction.y * BLOCK;
+
+        for (let i = snake.length - 1; i >= 0; i--) {
+            if (snake[i].x == head.x && snake[i].y == head.y || head.x < 0 || head.x > canvas.width || head.y < 0 || head.y > canvas.height) {
+                window.location.reload();
+            }
+        }
+
+        snake.push(head);
+        let tail = snake.shift();
+        
+        if (snake[snake.length - 1].x == apple.x && snake[snake.length - 1].y == apple.y) {
+            snake.splice(0, 0, tail);
+            let badApple = true;
+            while (badApple) {
+                apple = getRandomPosition();
+                for (var i = snake.length - 1; i >= 0; i--) {
+                    if (snake[i].x != apple.x || snake[i].y != apple.y) {
+                        badApple = false;
+                    }
+                }
+            }
+        }
+    }
+
+    function keyDown(e) {
+        switch (e.keyCode) {
+            case 32:
+                if (status.pause) {
+                    interval = setInterval(game, 1000 / FREQUENCY);
+                } else {
+                    clearInterval(interval);
+                }
+                status.pause = !status.pause;
+                break;
+
+            case 37:
+                if (direction.x == 0) {
+                    direction.x = -1;
+                    direction.y = 0;
+                }
+                break;
+            
+            case 38:
+                if (direction.y == 0) {
+                    direction.x = 0;
+                    direction.y = -1;
+                }
+                break;
+            
+            case 39:
+                if (direction.x == 0) {
+                    direction.x = 1;
+                    direction.y = 0;
+                }
+                break;
+            
+            case 40:
+                if (direction.y == 0) {
+                    direction.x = 0;
+                    direction.y = 1;
+                }
+                break;
+        }
+    }
+
+    function getRandomPosition() {
+        return {
+            x: Math.floor(Math.random() * Math.floor(canvas.width / 20)) * 20,
+            y: Math.floor(Math.random() * Math.floor(canvas.height / 20)) * 20
+        };
+    }
+</script>
